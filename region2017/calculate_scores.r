@@ -23,19 +23,20 @@ write.csv(scores, file.path(wd,'scores.csv'), na='', row.names=F)
 
 
 ## create figures ----
-source('PrepSpatial.r')  # until added to ohicore
-source('PlotMap.r')      # until added to ohicore
-source('PlotMapMulti.r') # until added to ohicore
-
-## Make Maps for each goal
-PlotMapMulti(scores       = scores,
-             spatial_poly = PrepSpatial('spatial/regions_gcs.geojson'),
-             path_figures = 'reports/figures')
-
-
-## Make Flower Plots for each region
-PlotFlowerMulti(scores          = scores,
-                rgns_to_plot    = unique(scores$region_id),
-                assessment_name = 'Global')
+# source(file.path(wd,'PrepSpatial.r'))  # until added to ohicore
+# source(file.path(wd,'PlotMap.r'))      # until added to ohicore
+# source(file.path(wd,'PlotMapMulti.r')) # until added to ohicore
+# source(file.path(wd,'PlotFlowerMulti.r')) # until added to ohicore
+#
+# ## Make Maps for each goal
+# PlotMapMulti(scores       = scores,
+#              spatial_poly = PrepSpatial('spatial/regions_gcs.geojson'),
+#              path_figures = 'reports/figures')
+#
+#
+# ## Make Flower Plots for each region
+# PlotFlowerMulti(scores          = scores,
+#                 rgns_to_plot    = unique(scores$region_id),
+#                 assessment_name = 'Canada-Atlantic')
 
 
