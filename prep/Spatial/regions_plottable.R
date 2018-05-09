@@ -1,0 +1,6 @@
+library(sf)
+regions <- st_read("prep/Spatial/regions_final.shp")
+object.size(regions)
+regions_plottable <- st_simplify(regions, dTolerance = 1000)
+object.size(regions_plottable)
+st_write(regions_plottable,"prep/Spatial/regions_plottable.shp")

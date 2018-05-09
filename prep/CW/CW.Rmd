@@ -1,0 +1,118 @@
+---
+title: "Clean Waters"
+output: 
+  html_document: 
+    toc: yes
+---
+
+The approach for CW is based on DFO's [shellfish harvesting](https://inter-w01.dfo-mpo.gc.ca/Geocortex/Essentials/Viewer/Index.html?viewer=CSSP_Public_En_Site) closures. The data comes from DFO's [ArcGIS REST server](https://inter-w01.dfo-mpo.gc.ca/arcgis/rest/services/CSSP_Base_Public/MapServer/)
+
+```{r download dfo data,eval=FALSE}
+# change above eval to TRUE if you need to download the data
+if(!require(esri2sf)){
+devtools::install_github("yonghah/esri2sf") 
+}
+library(raster)
+
+
+url <- "https://inter-w01.dfo-mpo.gc.ca/arcgis/rest/services/CSSP_Base_Public/MapServer/0"
+HarvestAreasRestricted <- esri2sf(url)
+st_write(HarvestAreasRestricted,"HarvestAreasRestricted.shp")
+
+url <- "https://inter-w01.dfo-mpo.gc.ca/arcgis/rest/services/CSSP_Base_Public/MapServer/1"
+# don't bother downloading BC
+where = "DFO_REGION!='4'"
+ProhibitionOrders <- esri2sf(url, where = where)
+st_write(ProhibitionOrders,"ProhibitionOrders.shp")
+
+
+url <- "https://inter-w01.dfo-mpo.gc.ca/arcgis/rest/services/CSSP_Base_Public/MapServer/2"
+VariationOrdersQuebec <- esri2sf(url)
+st_write(VariationOrdersQuebec,"VariationOrdersQuebec.shp")
+
+# no VariationOrdersNotQuebec records
+# url <- "https://inter-w01.dfo-mpo.gc.ca/arcgis/rest/services/CSSP_Base_Public/MapServer/3"
+# VariationOrdersNotQuebec <- esri2sf(url)
+
+url <- "https://inter-w01.dfo-mpo.gc.ca/arcgis/rest/services/CSSP_Base_Public/MapServer/4"
+HarvestAreasApproved <- esri2sf(url)
+st_write(HarvestAreasApproved,"HarvestAreasApproved.shp")
+
+# defined management areas, mostly in QC, not useful
+# url <- "https://inter-w01.dfo-mpo.gc.ca/arcgis/rest/services/CSSP_Base_Public/MapServer/5"
+# ManagementAreas <- esri2sf(url)
+```
+
+
+```{r load packages}
+library(tidyverse)
+library(sf)
+library(RColorBrewer)
+```
+
+After downloading we need to see what relative fractional area is closed in each region.
+
+```{r load spatial data}
+
+regions <- st_read("../Spatial/regions_final.shp")
+regions_plot <- st_read("../Spatial/regions_plottable.shp")
+
+HarvestAreasRestricted <- st_read("HarvestAreasRestricted.shp") %>% st_transform(st_crs(regions))
+ProhibitionOrders <- st_read("ProhibitionOrders.shp") %>% st_transform(st_crs(regions))
+VariationOrdersQuebec <- st_read("VariationOrdersQuebec.shp") %>% st_transform(st_crs(regions))
+HarvestAreasApproved <- st_read("HarvestAreasApproved.shp") %>% st_transform(st_crs(regions))
+
+```
+
+```{r get basemaps}
+# get basemaps
+Canada <- getData('GADM', country="CAN", level=1)
+USA <- getData('GADM', country="USA", level=1)
+SPM <- getData('GADM', country="SPM", level=1)
+
+NorthAm <- st_as_sf(rbind(Canada,USA,SPM)) %>% 
+  filter(NAME_1=="New Brunswick"|
+           NAME_1=="Newfoundland and Labrador"|
+           NAME_1=="Nova Scotia"|
+           NAME_1=="Prince Edward Island"|
+           NAME_1=="Québec"|
+           NAME_1=="Maine"|
+           NAME_1=="Vermont"|
+           NAME_1=="New Hampshire"|
+           NAME_1=="New York"|
+           NAME_1=="Rhode Island"|
+           NAME_1=="Connecticut"|
+           NAME_1=="Saint-Pierre"|
+           NAME_1=="Massachusetts") %>% 
+  st_transform(crs = st_crs(regions_plot)) %>% 
+  st_simplify(dTolerance = 100) %>%
+  mutate(x=map_dbl(geometry, ~st_centroid(.x)[[1]]),
+         y=map_dbl(geometry, ~st_centroid(.x)[[2]]))
+```
+
+```{r area by regions}
+ApprovedByRegion <- st_intersects(regions,HarvestAreasApproved)
+RestrictedByRegion <- st_intersects(regions,HarvestAreasRestricted)
+
+regions_plot$approvedProp <- 0
+for(r in 1:nrow(regions)){
+  areaApproved <- sum(st_area(HarvestAreasApproved[ApprovedByRegion[[r]],]))
+  areaRestricted <- sum(st_area(HarvestAreasRestricted[RestrictedByRegion[[r]],]))
+  regions_plot$approvedProp[r] <- areaApproved/(areaApproved+areaRestricted)
+}
+```
+
+
+```{r}
+bbox <- as.numeric(st_bbox(regions_plot))
+NorthAm$x <- st_centroid(NorthAm,of_largest_polygon = TRUE)
+
+ggplot(regions_plot)+
+  geom_sf(data=NorthAm,fill="grey70",colour="grey80")+
+  geom_sf(aes(fill=approvedProp*100),colour="transparent")+
+  scale_fill_distiller(palette="OrRd")+
+  coord_sf(crs=st_crs(regions_plot),xlim = c(bbox[1],bbox[3]),ylim = c(bbox[2],bbox[4]))+
+  theme(panel.background = element_rect(fill="grey90"))+
+  labs(fill="Closed Areas (%)")
+```
+
