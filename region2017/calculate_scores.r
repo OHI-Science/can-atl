@@ -19,7 +19,7 @@ source(file.path(wd,'configure_toolbox.r'))
 scores = ohicore::CalculateAll(conf, layers)
 
 ## save scores as scores.csv
-write.csv(scores, file.path(wd,'scores.csv'), na='', row.names=F)
+write_csv(scores, file.path(wd,'scores.csv'), na='')
 
 
 ## create figures ----
