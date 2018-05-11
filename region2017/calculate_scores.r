@@ -22,21 +22,12 @@ scores = ohicore::CalculateAll(conf, layers)
 write_csv(scores, file.path(wd,'scores.csv'), na='')
 
 
-## create figures ----
-# source(file.path(wd,'PrepSpatial.r'))  # until added to ohicore
-# source(file.path(wd,'PlotMap.r'))      # until added to ohicore
-# source(file.path(wd,'PlotMapMulti.r')) # until added to ohicore
-# source(file.path(wd,'PlotFlowerMulti.r')) # until added to ohicore
-#
-# ## Make Maps for each goal
-# PlotMapMulti(scores       = scores,
-#              spatial_poly = PrepSpatial('spatial/regions_gcs.geojson'),
-#              path_figures = 'reports/figures')
-#
-#
-# ## Make Flower Plots for each region
-# PlotFlowerMulti(scores          = scores,
-#                 rgns_to_plot    = unique(scores$region_id),
-#                 assessment_name = 'Canada-Atlantic')
+# visualize scores ----
 
+## Flower plots for each region ----
+source('https://raw.githubusercontent.com/OHI-Science/arc/master/circle2016/plot_flower_local.R')
+
+##  plot.
+PlotFlower(#region_plot = 0, # With no region specified, defaults to one for each rgn_id
+  assessment_name = "Canada — Atlantic")
 

@@ -23,4 +23,3 @@ ohicore::CheckLayers(file.path(wd, 'layers.csv'), file.path(wd,'layers'), flds_i
 
 ## load scenario layers for ohicore to access. Layers files are not modified.
 layers = ohicore::Layers(file.path(wd, 'layers.csv'), file.path(wd,'layers'))
-
