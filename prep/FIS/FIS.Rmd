@@ -1,0 +1,72 @@
+---
+title: "FIS"
+output: html_document
+---
+
+```{r}
+library(sf)
+library(ggplot2)
+library(tidyverse)
+library(googlesheets)
+
+```
+
+
+# Create shapefiles for LFAs, CFAs, and SFAs
+
+```{r}
+# coords <- read.csv("DFO_fisheries_zones_Coordinates.csv") %>% 
+coords <- gs_read(ss=gs_title("DFO_fisheries_zones"),ws="Coordinates") %>% 
+  separate(Latitude_DDMMSS,into = c("Latitude_DD","Latitude_MM","Latitude_SS"), sep=" ") %>% 
+  separate(Longitude_DDMMSS,into = c("Longitude_DD","Longitude_MM","Longitude_SS"), sep=" ") %>% 
+  rowwise() %>% 
+  mutate(Latitude=sum(as.numeric(Latitude_DD),as.numeric(Latitude_MM)/60,as.numeric(Latitude_SS)/3600,na.rm=TRUE),
+         Longitude=-sum(as.numeric(Longitude_DD),as.numeric(Longitude_MM)/60,as.numeric(Longitude_SS)/3600,na.rm=TRUE),
+         ID=paste(Type,Number))%>%
+  st_as_sf(coords=c("Longitude","Latitude"), crs = 4267)
+```
+
+```{r}
+library(mapview)
+library(mapedit)
+IDs="SSFA 1, 2, 3, 4"
+test <- mapview(coords %>% filter(ID==IDs)) %>%
+  editMap("coords")
+
+st_coordinates(test$drawn)[,2] %>% write.table(row.names = F,col.names = F)
+print("")
+-st_coordinates(test$drawn)[,1] %>% write.table(row.names = F,col.names = F)
+```
+
+```{r}
+test <- gs_read(ss=gs_title("DFO_fisheries_zones"),ws="Coordinates") %>% 
+  separate(Latitude_DDMMSS,into = c("Latitude_DD","Latitude_MM","Latitude_SS"), sep=" ") %>% 
+  separate(Longitude_DDMMSS,into = c("Longitude_DD","Longitude_MM","Longitude_SS"), sep=" ") %>% 
+  rowwise() %>% 
+  mutate(Latitude=sum(as.numeric(Latitude_DD),as.numeric(Latitude_MM)/60,as.numeric(Latitude_SS)/3600,na.rm=TRUE),
+         Longitude=-sum(as.numeric(Longitude_DD),as.numeric(Longitude_MM)/60,as.numeric(Longitude_SS)/3600,na.rm=TRUE),
+         ID=paste(Type,Number))
+
+test <- test %>% filter(ID==IDs) %>%
+  select(Longitude,Latitude) %>% 
+  as.matrix() %>% 
+  list %>%
+  st_polygon() %>%
+  st_sfc(crs=4326)
+
+mapview(test)
+```
+
+
+
+```{r}
+region_boxes <- st_read("../Spatial/region_boxes.shp")
+region_coastline <- st_read("../Spatial/region_coastline.shp")
+regions <- st_read("../Spatial/")
+
+ggplot(region_boxes)+
+  geom_sf()+
+  geom_sf(data=region_coastline)
+  
+```
+
